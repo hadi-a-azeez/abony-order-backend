@@ -5,6 +5,9 @@ const express = require("express");
 const cors = require("cors");
 const twilio = require("twilio");
 require("dotenv").config();
+const AWS = require("aws-sdk");
+
+const port = process.env.PORT || 4000;
 
 //twilio requirements -- Texting API
 const client = new twilio(process.env.accountSid, process.env.authToken);
@@ -16,6 +19,36 @@ app.use(cors()); //Blocks browser from restricting any data
 //Welcome Page for the Server
 app.get("/", (req, res) => {
   res.send("Welcome to the Express Server");
+});
+
+app.get("/send-text-aws", (req, res) => {
+  console.log("Message = " + req.query.message);
+  console.log("Number = " + req.query.number);
+  console.log("Subject = " + req.query.subject);
+  var params = {
+    Message: req.query.message,
+    PhoneNumber: "+" + req.query.number,
+    MessageAttributes: {
+      "AWS.SNS.SMS.SenderID": {
+        DataType: "String",
+        StringValue: req.query.subject,
+      },
+    },
+  };
+
+  var publishTextPromise = new AWS.SNS({ apiVersion: "2010-03-31" })
+    .publish(params)
+    .promise();
+
+  publishTextPromise
+    .then(function (data) {
+      console.log("MessageID is " + data.MessageId);
+      res.end(JSON.stringify({ MessageID: data.MessageId }));
+    })
+    .catch(function (err) {
+      console.log("Error: " + err);
+      res.end(JSON.stringify({ Error: err }));
+    });
 });
 
 //Twilio
@@ -30,7 +63,7 @@ app.get("/send-text", (req, res) => {
     .create({
       body: textmessage,
       to: "+91" + recipient, // Text this number
-      from: "+18434387145   ", // From a valid Twilio number
+      from: "+18434387145", // From a valid Twilio number
     })
     .then((message) => {
       res.send({
@@ -47,4 +80,4 @@ app.get("/send-text", (req, res) => {
     });
 });
 
-app.listen(4000, () => console.log("Running on Port 4000"));
+app.listen(port, () => console.log("Running on Port 4000"));
