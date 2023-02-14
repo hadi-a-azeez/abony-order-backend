@@ -14,7 +14,12 @@ const client = new twilio(process.env.accountSid, process.env.authToken);
 
 const app = express(); //alias
 
-app.use(cors()); //Blocks browser from restricting any data
+//allow https:kardano.vercel.app and https:abonyorder.netlify.app to access the server
+app.use(
+  cors({
+    origin: ["https://kardano.vercel.app", "https://abonyorder.netlify.app"],
+  })
+);
 
 //Welcome Page for the Server
 app.get("/", (req, res) => {
